@@ -1,0 +1,32 @@
+docs/界面布局.md
+  s_69582d75d5d51b::t_a1cfddc8276867 101
+CCBarTests/QuotaParsingTests.swift
+  s_69582d75d5d51b::t_43525a0da8573e 914-915
+  s_69582d75d5d51b::t_5070b6b4da02dd 825-913,916-945
+Core/Quota/ClaudeQuotaClient.swift
+  s_69582d75d5d51b::t_e3671acd2e0991 130,138-160,280-284
+docs/技术实现.md
+  s_69582d75d5d51b::t_d72f292a5d0721 370
+README_EN.md
+  s_69582d75d5d51b::t_4881685fed2c9c 43
+docs/产品需求.md
+  s_69582d75d5d51b::t_ba4f14cada5b5d 43,57
+README.md
+  s_69582d75d5d51b::t_14f2b0fca4eaff 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "6958beabc55b26e2a09364373e7eb21cbb65dc8a",
+  "prompts": {},
+  "sessions": {
+    "s_69582d75d5d51b": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a19524-8763-719b-88da-6368711fe609",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Dennis.Wang <dennis.wang@zoom.us>"
+    }
+  }
+}
