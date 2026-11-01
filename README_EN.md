@@ -40,7 +40,7 @@ cc-bar presents two types of data: **Subscription Quotas** queried directly from
 | Service / Tool | Quota Monitoring | Alert Notifications | Local Usage / Cost Analytics | Multi-Account | Credential Source |
 | :--- | :--- | :---: | :--- | :---: | :--- |
 | **Codex** | 5h / weekly quotas, reset countdowns | Supported | Local sessions (incl. `.zst` logs) | Supported | `~/.codex/auth.json` (auto-renew) |
-| **Claude Code** | 5h / weekly / model-specific quotas | Supported | Local session logs | — | Keychain / local read-only |
+| **Claude Code** | 5h / weekly / model-specific quotas; Enterprise monthly allowance when standard windows are absent | Supported (standard windows) | Local session logs | — | Keychain / local read-only |
 | **Antigravity** | Gemini 5h & weekly, Claude auxiliary | Supported | — | — | Google Cloud OAuth (auto-renew) |
 | **Cursor** | Total / Auto / API (incl. Unlimited) | Supported | Remote metering (today / this cycle) | — | Local `state.vscdb` (read-only) |
 | **Command Code** | 5h / weekly quotas, GOAT monthly Credits | Supported | — | — | 5-level auto-detection / Keychain Key |

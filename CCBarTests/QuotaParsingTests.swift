@@ -822,6 +822,127 @@ final class QuotaParsingTests: XCTestCase {
         XCTAssertEqual(snapshot.modelLimits.first?.window.remainingPercent, 100)
     }
 
+    private func claudeMonthlyUsage(used: Any = 75.0, limit: Any = 30_000) -> [String: Any] {
+        ["is_enabled": true, "used_credits": used, "monthly_limit": limit]
+    }
+
+    func testClaudeEnterpriseMonthlyAllowanceUsesUnroundedAmounts() throws {
+        // Synthetic amounts with the observed Enterprise response shape, not account data.
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data("""
+        {
+          "five_hour": null,
+          "seven_day": null,
+          "limits": [],
+          "spend": {"enabled": true, "percent": 0},
+          "extra_usage": {
+            "is_enabled": true,
+            "monthly_limit": 30000,
+            "used_credits": 75.0,
+            "utilization": 0.25,
+            "currency": "USD",
+            "decimal_places": 2
+          }
+        }
+        """.utf8)) as? [String: Any])
+
+        let snapshot = ClaudeQuotaClient.parse(root: root)
+        let monthly = try XCTUnwrap(snapshot.primaryLimit)
+
+        XCTAssertEqual(monthly.id, "claude-monthly")
+        XCTAssertEqual(monthly.kind, .unknown)
+        XCTAssertEqual(monthly.displayName, "MONTHLY")
+        XCTAssertEqual(monthly.window.usedPercent, 0.25, accuracy: 0.0001)
+        XCTAssertEqual(monthly.window.remainingPercent, 99.75, accuracy: 0.0001)
+        XCTAssertNil(monthly.window.resetsAt)
+        XCTAssertNil(monthly.window.windowSeconds)
+        XCTAssertNil(snapshot.fiveHourLimit)
+        XCTAssertNil(snapshot.weeklyLimit)
+        XCTAssertNil(snapshot.secondaryLimit)
+        XCTAssertEqual(snapshot.allLimits.count, 1)
+    }
+
+    func testClaudeMonthlyAllowanceRequiresEnabledPositiveFiniteLimit() {
+        var disabled = claudeMonthlyUsage()
+        disabled["is_enabled"] = false
+        XCTAssertNil(ClaudeQuotaClient.parse(root: ["extra_usage": disabled]).primaryLimit)
+        disabled.removeValue(forKey: "is_enabled")
+        XCTAssertNil(ClaudeQuotaClient.parse(root: ["extra_usage": disabled]).primaryLimit)
+
+        let invalidLimits: [Any] = [0, -1, NSNull(), true, "30000", Double.nan, Double.infinity]
+        for limit in invalidLimits {
+            let snapshot = ClaudeQuotaClient.parse(root: [
+                "extra_usage": claudeMonthlyUsage(limit: limit),
+            ])
+            XCTAssertNil(snapshot.primaryLimit, "Invalid monthly limit: \(limit)")
+        }
+        var missing = claudeMonthlyUsage()
+        missing.removeValue(forKey: "monthly_limit")
+        XCTAssertNil(ClaudeQuotaClient.parse(root: ["extra_usage": missing]).primaryLimit)
+    }
+
+    func testClaudeMonthlyAllowanceRejectsMissingOrInvalidUsage() {
+        let invalidAmounts: [Any] = [-1, NSNull(), false, "75", Double.nan, Double.infinity]
+        for used in invalidAmounts {
+            let snapshot = ClaudeQuotaClient.parse(root: [
+                "extra_usage": claudeMonthlyUsage(used: used),
+            ])
+            XCTAssertNil(snapshot.primaryLimit, "Invalid monthly usage: \(used)")
+        }
+        var missing = claudeMonthlyUsage()
+        missing.removeValue(forKey: "used_credits")
+        XCTAssertNil(ClaudeQuotaClient.parse(root: ["extra_usage": missing]).primaryLimit)
+        XCTAssertNil(ClaudeQuotaClient.parse(root: ["extra_usage": NSNull()]).primaryLimit)
+    }
+
+    func testClaudeMonthlyAllowanceClampsExhaustedBalances() throws {
+        for (used, remaining) in [(0.0, 100.0), (100.0, 0.0), (150.0, 0.0)] {
+            let snapshot = ClaudeQuotaClient.parse(root: [
+                "extra_usage": claudeMonthlyUsage(used: used, limit: 100),
+            ])
+            let monthly = try XCTUnwrap(snapshot.primaryLimit)
+            XCTAssertEqual(monthly.window.remainingPercent, remaining)
+        }
+    }
+
+    func testClaudeMonthlyAllowanceDoesNotReplaceSessionOrWeeklyLimits() {
+        let windows: [([String: Any], QuotaLimitKind)] = [
+            (["five_hour": ["utilization": 20], "seven_day": ["utilization": 30]], .fiveHour),
+            (["seven_day": ["utilization": 30]], .weekly),
+            (["limits": [["kind": "session", "percent": 20]]], .fiveHour),
+            (["limits": [["kind": "weekly_all", "percent": 30]]], .weekly),
+        ]
+        for (windowRoot, kind) in windows {
+            var root = windowRoot
+            root["extra_usage"] = claudeMonthlyUsage()
+            let snapshot = ClaudeQuotaClient.parse(root: root)
+            XCTAssertEqual(snapshot.primaryLimit?.kind, kind)
+            XCTAssertFalse(snapshot.allLimits.contains { $0.id == "claude-monthly" })
+        }
+    }
+
+    func testClaudeMonthlyAllowanceSurvivesCacheRoundTripAndMenuBarSelection() throws {
+        let snapshot = ClaudeQuotaClient.parse(root: ["extra_usage": claudeMonthlyUsage()])
+        let cached = try JSONDecoder().decode(
+            QuotaSnapshot.self,
+            from: JSONEncoder().encode(snapshot)
+        )
+        XCTAssertEqual(cached, snapshot)
+        for choice in [MenuBarWindowChoice.primary, .both] {
+            XCTAssertEqual(MenuBarQuotaSelection.limits(in: cached, choice: choice).map(\.id), ["claude-monthly"])
+        }
+        XCTAssertTrue(MenuBarQuotaSelection.limits(in: cached, choice: .weekly).isEmpty)
+    }
+
+    func testClaudeGenericLimitsRejectBooleansAndNonFiniteNumbers() {
+        let invalidPercents: [Any] = [true, Double.nan, Double.infinity]
+        for percent in invalidPercents {
+            let snapshot = ClaudeQuotaClient.parse(root: [
+                "limits": [["kind": "session", "percent": percent]],
+            ])
+            XCTAssertNil(snapshot.primaryLimit)
+        }
+    }
+
     func testClaudeProfilePlanNameShowsPlanFamily() {
         func plan(_ type: String?, _ tier: String?) -> String? {
             var organization: [String: Any] = [:]

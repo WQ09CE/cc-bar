@@ -40,7 +40,7 @@ cc-bar 展示两类数据：**订阅额度**直连各服务官方接口获取剩
 | 服务 / 工具 | 订阅额度监控 | 额度耗尽提醒 | 本地用量 / 费用统计 | 多账号同屏 | 凭据来源 |
 | :--- | :--- | :---: | :--- | :---: | :--- |
 | **Codex** | 5 小时 / 周额度、重置倒计时 | 支持 | 本地会话（含 `.zst` 压缩日志） | 支持 | `~/.codex/auth.json`（自动续期） |
-| **Claude Code** | 5 小时 / 周 / 模型专属额度 | 支持 | 本地会话日志 | — | Keychain / 本地只读凭据 |
+| **Claude Code** | 5 小时 / 周 / 模型专属额度；无标准窗口时显示 Enterprise 月额度 | 支持（标准窗口） | 本地会话日志 | — | Keychain / 本地只读凭据 |
 | **Antigravity** | Gemini 5 小时与周、Claude 辅助 | 支持 | — | — | Google Cloud OAuth（自动续期） |
 | **Cursor** | Total / Auto / API（含 Unlimited） | 支持 | 账号全设备远端计量（今日 / 本期） | — | 本地 state.vscdb（严格只读） |
 | **Command Code** | 5 小时 / 周额度、GOAT 月度 Credits | 支持 | — | — | 本地 5 级只读探测 / Keychain Key |

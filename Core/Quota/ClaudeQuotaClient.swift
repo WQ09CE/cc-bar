@@ -127,11 +127,34 @@ nonisolated enum ClaudeQuotaClient {
 
         return QuotaSnapshot(
             app: .claude,
-            primaryLimit: session ?? weekly,
+            primaryLimit: session ?? weekly ?? parseMonthlyLimit(root["extra_usage"]),
             secondaryLimit: session == nil ? nil : weekly,
             modelLimits: modelLimits,
             planType: nil,
             fetchedAt: Date()
+        )
+    }
+
+    /// Enterprise accounts can expose only a monthly spending allowance.
+    /// Both amounts use the same minor units; do not use the rounded spend.percent.
+    nonisolated private static func parseMonthlyLimit(_ value: Any?) -> QuotaLimit? {
+        guard let extraUsage = value as? [String: Any],
+              extraUsage["is_enabled"] as? Bool == true,
+              let used = number(extraUsage["used_credits"]), used >= 0,
+              let limit = number(extraUsage["monthly_limit"]), limit > 0
+        else { return nil }
+
+        return QuotaLimit(
+            id: "claude-monthly",
+            kind: .unknown,
+            displayName: "MONTHLY",
+            window: QuotaWindow(
+                usedPercent: used >= limit ? 100 : used / limit * 100,
+                // The usage response does not provide a monthly reset or cycle length.
+                resetsAt: nil,
+                windowSeconds: nil
+            ),
+            isActive: true
         )
     }
 
@@ -254,9 +277,11 @@ nonisolated enum ClaudeQuotaClient {
     }
 
     nonisolated private static func number(_ value: Any?) -> Double? {
-        if let value = value as? Double { return value }
-        if let value = value as? Int { return Double(value) }
-        return nil
+        guard let number = value as? NSNumber,
+              CFGetTypeID(number) != CFBooleanGetTypeID(),
+              number.doubleValue.isFinite
+        else { return nil }
+        return number.doubleValue
     }
 
     nonisolated private static func nonEmpty(_ value: String?) -> String? {
