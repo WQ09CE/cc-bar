@@ -1,0 +1,19 @@
+MenuBar/MenuBarLabel.swift
+  s_333b60717a0e0b::t_6cd9a72de2128a 191-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "b4a3b1e993845da589e5ef4ae1ed59c2aaeb91bf",
+  "prompts": {},
+  "sessions": {
+    "s_333b60717a0e0b": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a19a06-5616-7642-8f88-37cbbc51e242",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dennis.Wang <dennis.wang@zoom.us>"
+    }
+  }
+}
