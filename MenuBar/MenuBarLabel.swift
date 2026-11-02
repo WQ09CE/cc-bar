@@ -188,6 +188,11 @@ enum MenuBarQuotaSelection {
         if snapshot.app == .cursor {
             return [snapshot.primaryLimit].compactMap { $0 }
         }
+        // Antigravity 菜单栏固定显示周额度，不显示 5 小时窗口；
+        // 没有周额度时退回主要额度，避免菜单栏空白。
+        if snapshot.app == .antigravity {
+            return [snapshot.weeklyLimit ?? snapshot.primaryLimit].compactMap { $0 }
+        }
         switch choice {
         case .primary:
             return [snapshot.primaryLimit].compactMap { $0 }

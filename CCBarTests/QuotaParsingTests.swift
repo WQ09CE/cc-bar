@@ -1070,6 +1070,44 @@ final class QuotaParsingTests: XCTestCase {
         }
     }
 
+    func testMenuBarAntigravityUsesWeeklyForEveryDisplayChoice() {
+        let fiveHour = QuotaLimit(
+            id: "ag-5h",
+            kind: .fiveHour,
+            displayName: "5H",
+            window: QuotaWindow(usedPercent: 80, resetsAt: nil, windowSeconds: 18_000),
+            isActive: nil
+        )
+        let weekly = QuotaLimit(
+            id: "ag-weekly",
+            kind: .weekly,
+            displayName: "WK",
+            window: QuotaWindow(usedPercent: 20, resetsAt: nil, windowSeconds: 604_800),
+            isActive: nil
+        )
+        let both = QuotaSnapshot(
+            app: .antigravity,
+            primaryLimit: fiveHour,
+            secondaryLimit: weekly,
+            auxiliaryLimits: [],
+            planType: nil,
+            fetchedAt: .now
+        )
+        let fiveHourOnly = QuotaSnapshot(
+            app: .antigravity,
+            primaryLimit: fiveHour,
+            secondaryLimit: nil,
+            auxiliaryLimits: [],
+            planType: nil,
+            fetchedAt: .now
+        )
+
+        for choice in MenuBarWindowChoice.allCases {
+            XCTAssertEqual(MenuBarQuotaSelection.limits(in: both, choice: choice).map(\.id), ["ag-weekly"])
+            XCTAssertEqual(MenuBarQuotaSelection.limits(in: fiveHourOnly, choice: choice).map(\.id), ["ag-5h"])
+        }
+    }
+
     func testHistoryKeepsSeriesSeparatelyWhenPrimaryKindChanges() {
         let start = Date(timeIntervalSince1970: 1_000)
         var payload = QuotaHistoryPayload(dayStart: QuotaHistoryStore.todayStart(now: start))
